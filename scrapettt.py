@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from docx import Document
 from docx.shared import RGBColor
+import re
 
 # Base URL
 base_url = "https://talktajiktoday.com/word-a-day/page/"
@@ -46,6 +47,20 @@ for page_num in range(1, 5):  # Adjust the range as needed
 # Create a new Word document
 doc = Document()
 
+# Regular expression to detect Cyrillic characters
+cyrillic_pattern = re.compile('[\u0400-\u04FF]+')
+
+# Function to add text with Cyrillic characters in bold
+def add_text_with_cyrillic_bold(paragraph, text):
+    parts = cyrillic_pattern.split(text)
+    matches = cyrillic_pattern.findall(text)
+    
+    for i, part in enumerate(parts):
+        paragraph.add_run(part)
+        if i < len(matches):
+            run = paragraph.add_run(matches[i])
+            run.bold = True
+
 # Add each post to the document
 for heading, post in all_posts:
     if heading:
@@ -54,13 +69,20 @@ for heading, post in all_posts:
     paragraph = doc.add_paragraph()
     if "Bonus:" in post:
         parts = post.split("Bonus:", 1)
-        paragraph.add_run(parts[0])
+        
+        # Add text with Cyrillic characters in bold
+        add_text_with_cyrillic_bold(paragraph, parts[0])
+
+        # Add a blank line before the bonus content
+        paragraph.add_run().add_break()
+        
         bonus_run = paragraph.add_run("Bonus:" + parts[1])
         bonus_run.font.color.rgb = RGBColor(0, 100, 0)  # Dark green color
     else:
-        paragraph.add_run(post)
+        # Add text with Cyrillic characters in bold
+        add_text_with_cyrillic_bold(paragraph, post)
 
 # Save the document
-doc.save("scraped_posts4.docx")
+doc.save("scraped_posts7.docx")
 
 print("Posts have been saved to scraped_posts.docx")
