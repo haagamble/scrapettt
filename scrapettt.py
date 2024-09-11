@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 from docx import Document
+from docx.shared import RGBColor
 
 # Base URL
 base_url = "https://talktajiktoday.com/word-a-day/page/"
@@ -26,8 +27,19 @@ for page_num in range(1, 5):  # Adjust the range as needed
         
         # Extract and store the content of each post
         for post in posts:
+            # Extract the heading
+            heading_tag = post.find('h2')
+            heading = heading_tag.get_text(strip=True) if heading_tag else ""
+            
+            # Remove the heading from the post content
+            if heading_tag:
+                heading_tag.decompose()
+            
+            # Extract the rest of the content
             post_content = post.get_text(separator="\n", strip=True)
-            all_posts.append(post_content)
+            
+            # Store the heading and content
+            all_posts.append((heading, post_content))
     else:
         print(f"Failed to retrieve page {page_num}")
 
@@ -35,10 +47,20 @@ for page_num in range(1, 5):  # Adjust the range as needed
 doc = Document()
 
 # Add each post to the document
-for post in all_posts:
-    doc.add_paragraph(post)
+for heading, post in all_posts:
+    if heading:
+        doc.add_heading(heading, level=2)
+    
+    paragraph = doc.add_paragraph()
+    if "Bonus:" in post:
+        parts = post.split("Bonus:", 1)
+        paragraph.add_run(parts[0])
+        bonus_run = paragraph.add_run("Bonus:" + parts[1])
+        bonus_run.font.color.rgb = RGBColor(0, 100, 0)  # Dark green color
+    else:
+        paragraph.add_run(post)
 
 # Save the document
-doc.save("scraped_posts.docx")
+doc.save("scraped_posts4.docx")
 
 print("Posts have been saved to scraped_posts.docx")
